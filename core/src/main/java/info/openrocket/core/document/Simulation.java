@@ -37,6 +37,9 @@ import info.openrocket.core.util.ModID;
 import info.openrocket.core.util.SafetyMutex;
 import info.openrocket.core.util.StateChangeListener;
 
+// Dispersion analysis imports
+import java.io.IOException;
+
 /**
  * A class defining a simulation, its conditions and simulated data.
  * <p>
@@ -501,12 +504,37 @@ public class Simulation implements ChangeSource, Cloneable {
 			long t1, t2;
 			log.debug("Simulation: calling simulator");
 			t1 = System.currentTimeMillis();
-			simulator.simulate(simulationConditions);
+
+			//TODO: Dispersion analysis integration from SEB
+			final long startTime = System.currentTimeMillis();
+			boolean dispAnalysis = true; // Set to true to enable dispersion analysis
+			boolean constantThrust = false; // If dispAnalysis is true, set this to control which analysis runs (false = normal dispersion, true = constant thrust)
+
+			if (dispAnalysis) { // Dispersion analysis for SEB
+				// Runs dispersion w/ custom motor constant thrust motor loaded in. Allows for different motor iteration in code
+				if (constantThrust) {
+					ConstantThrustDispersionAnalysis analysis = new ConstantThrustDispersionAnalysis(simulationConditions);
+					analysis.thrustCurveIteration();
+				} else { // Runs normal dispersion (uses motor built into rocket)
+					DispersionAnalysis analysis = new DispersionAnalysis(simulationConditions);
+					analysis.loopSim();
+				}
+			} else {
+				// Normal simulation
+				simulator.simulate(simulationConditions);
+			}
+
 			t2 = System.currentTimeMillis();
 			log.debug("Simulation: returning from simulator, simulation took " + (t2 - t1) + "ms");
+			final long endtime = System.currentTimeMillis();
+			if (dispAnalysis) {
+				System.out.println("Dispersion analysis time elapsed: " + (endtime - startTime) + "ms");
+			}
 
 		} catch (SimulationException e) {
 			throw e;
+		} catch (IOException e) {
+			throw new RuntimeException("IO error during dispersion analysis", e);
 		} finally {
 			// Set simulated info after simulation
 			simulatedConditions = options.clone();
