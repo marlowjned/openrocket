@@ -138,7 +138,10 @@ public class DispersionAnalysis {
      * Constructor, sets up the simulationEngineClass, simulatorEngine (which actually runs the sim),
      * All SimulationCondition values, and some user set values for simulationConditions like wind speed
      */
-    public DispersionAnalysis(SimulationConditions presetConditions) {
+    public DispersionAnalysis(SimulationConditions conditions) {
+
+        this.conditions = conditions;
+        conditions.setEnableDispersionAnalysis(true);
 
         //FUNDAMENTAL vars
         try {
@@ -150,7 +153,7 @@ public class DispersionAnalysis {
         } catch (InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
-        conditions = presetConditions.clone();
+        //conditions = conditions.clone();
 
 
         //DATA, values can change depending on how many iterations occur
@@ -410,7 +413,7 @@ public class DispersionAnalysis {
         }
 //        System.out.println("east is " + Arrays.toString(windAltEastSamples[0]));
 //        System.out.println("North is is " + Arrays.toString(windAltNorthSamples[0]));
-        System.out.println("magnitude is " + Arrays.toString(altToWindMap));
+//        System.out.println("magnitude is " + Arrays.toString(altToWindMap));
 //        System.out.println("Direction is " + Arrays.toString(altToWindDirectionMap));
 
 

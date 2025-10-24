@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
 
 
 public class BasicEventSimulationEngineDispersionAnalysis implements SimulationEngine {
@@ -398,29 +399,33 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
 				previousSimulationTime = currentStatus.getSimulationTime();
 
 				// Override rocket cd values w/ RASAero data
-				boolean RASAeroData = true; //TODO: make a way for this to be toggled/accessed easily when running
+				boolean RASAeroData = false; //TODO: make a way for this to be toggled/accessed easily when running
 
 				if (RASAeroData) {
-					//TODO: obtain RASAero cd values
-					int RASAeroCD = 1; // replace this with cd's read from the RASAero csv
-					System.out.println("query RASAeron cds");
+					double RASAeroCD = 1; // default value if RASAero data not found
+					System.out.println("query RASAero cds");
 
 					double curMachNum = currentStatus.getFlightDataBranch().getLast(FlightDataType.TYPE_MACH_NUMBER);
 					System.out.println("CURRENT MACH NUMBER: " + curMachNum);
 
-				/*
-					read from file
-					extract cd values corresponding to mach numbers
-					store in a data structure
-				 */
+					// Retrieve CD value from RASAero CSV
+					// TODO: potentially move this implementation to get cd's and specific vals into RASAero.java
+					System.out.println("Calling RASAero.getDatMach() for Mach: " + curMachNum);
+					List<Double> rasaeroData = RASAero.getDatMach(curMachNum);
+					System.out.println("RASAero data result: " + rasaeroData);
+					if (rasaeroData != null) {
+						RASAeroCD = RASAero.getDatMach(curMachNum).get(2);
+						// upon call to getDatMach, RASAero.java will check if datamap is empty and if so will populate w csv
+						System.out.println("RASAero CD: " + RASAeroCD);
 
-					//Overrides cd values
-					Rocket rocketHold = new Rocket();
-					rocketHold = this.simCond.getRocket();
-					rocketHold.setOverrideCD(RASAeroCD);
-					rocketHold.setCDOverridden(true);
+						//Overrides cd values
+						Rocket rocketHold = new Rocket();
+						rocketHold = this.simCond.getRocket();
+						rocketHold.setOverrideCD(RASAeroCD);
+						rocketHold.setCDOverridden(true);
 
-					System.out.println(rocketHold.getComponentCD(0,0, curMachNum, 0));
+						System.out.println(rocketHold.getComponentCD(0,0, curMachNum, 0));
+					}
 
 				}
 

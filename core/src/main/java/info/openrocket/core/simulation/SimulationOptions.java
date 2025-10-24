@@ -87,6 +87,8 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 
 	private SimulationStepperMethod stepperMethodChoice = SimulationStepperMethod.RK4;
 
+	private boolean enableDispersionAnalysis = false;
+
 	public SimulationOptions() {
 		averageWindModel = new PinkNoiseWindModel(randomSeed);
 		averageWindModel.addChangeListener(e -> fireChangeEvent());
@@ -297,6 +299,18 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 		fireChangeEvent();
 	}
 
+	public boolean isDispersionAnalysisEnabled() {
+		return enableDispersionAnalysis;
+	}
+
+	public void setEnableDispersionAnalysis(boolean enable) {
+		if (this.enableDispersionAnalysis == enable) {
+			return;
+		}
+		this.enableDispersionAnalysis = enable;
+		fireChangeEvent();
+	}
+
 	public boolean isISAAtmosphere() {
 		return useISA;
 	}
@@ -421,6 +435,7 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 			copy.multiLevelPinkNoiseWindModel = this.multiLevelPinkNoiseWindModel.clone();
 
 			copy.windModelType = this.windModelType;
+			copy.enableDispersionAnalysis = this.enableDispersionAnalysis;
 
 			// Create a new list for listeners
 			copy.listeners = new ArrayList<>();
@@ -539,7 +554,8 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 				MathUtil.equals(this.maxSimulationTime, o.maxSimulationTime)) &&
 				this.windModelType == o.windModelType &&
 				this.averageWindModel.equals(o.averageWindModel) &&
-				this.multiLevelPinkNoiseWindModel.equals(o.multiLevelPinkNoiseWindModel);
+				this.multiLevelPinkNoiseWindModel.equals(o.multiLevelPinkNoiseWindModel) &&
+				this.enableDispersionAnalysis == o.enableDispersionAnalysis;
 	}
 
 	/**
@@ -600,6 +616,8 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 		conditions.setTimeStep(getTimeStep());
 		conditions.setMaxSimulationTime(getMaxSimulationTime());
 		conditions.setMaximumAngleStep(getMaximumStepAngle());
+
+		conditions.setEnableDispersionAnalysis(isDispersionAnalysisEnabled());
 
 		return conditions;
 	}

@@ -74,7 +74,7 @@ public class MonteCarloDistribution {
         RandomSource randomSource = RandomSource.MT; // Create a random source
         ContinuousDistribution.Sampler sampler = empiricalDist.createSampler(randomSource.create()); // Create a sampler
 
-        System.out.println("empirical distribution mean is "+ empiricalDist.getMean());
+        //System.out.println("empirical distribution mean is "+ empiricalDist.getMean());
 
         return empiricalDist.sample(numSamples, sampler); // Sample 10 values
 
@@ -87,7 +87,7 @@ public class MonteCarloDistribution {
         double[][] windData = readParallelCSV(filePath);
         windData = transposeMatrix(windData);
 
-        //This will contians all the samples for each altitude, -1 since first column represents pressures
+        //This will contain all the samples for each altitude, -1 since first column represents pressures
         double windSamples[][] = new double[windData.length][numSamples];
 
         RandomSource randomSource = RandomSource.MT; // Create a random source

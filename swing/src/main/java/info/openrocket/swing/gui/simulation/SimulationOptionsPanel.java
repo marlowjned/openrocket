@@ -11,6 +11,7 @@ import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -203,9 +204,24 @@ class SimulationOptionsPanel extends JPanel {
 		unit.setToolTipText(tip);
 		subsub.add(unit, "wrap");
 
-		
+
 		sub.add(subsub, "spanx, wrap para");
-		
+
+		// Dispersion Analysis checkbox
+		tip = "Enable Monte Carlo dispersion analysis with wind variations";
+		JCheckBox dispersionCheckBox = new JCheckBox("Enable Dispersion Analysis");
+		dispersionCheckBox.setToolTipText(tip);
+		dispersionCheckBox.setSelected(conditions.isDispersionAnalysisEnabled());
+
+		dispersionCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				conditions.setEnableDispersionAnalysis(dispersionCheckBox.isSelected());
+			}
+		});
+
+		sub.add(dispersionCheckBox, "spanx, wrap para");
+
 		// Reset to default button
 		JButton resetBtn = new JButton(trans.get("simedtdlg.but.resettodefault"));
 		// Reset the time step to its default value (

@@ -507,10 +507,10 @@ public class Simulation implements ChangeSource, Cloneable {
 
 			//TODO: Dispersion analysis integration from SEB
 			final long startTime = System.currentTimeMillis();
-			boolean dispAnalysis = true; // Set to true to enable dispersion analysis
-			boolean constantThrust = false; // If dispAnalysis is true, set this to control which analysis runs (false = normal dispersion, true = constant thrust)
+			// Scuffed, delete ts
+            boolean constantThrust = false; // If dispAnalysis is true, set this to control which analysis runs (false = normal dispersion, true = constant thrust)
 
-			if (dispAnalysis) { // Dispersion analysis for SEB
+			if (simulationConditions.isDispersionAnalysisEnabled()) { // Dispersion analysis for SEB
 				// Runs dispersion w/ custom motor constant thrust motor loaded in. Allows for different motor iteration in code
 				if (constantThrust) {
 					ConstantThrustDispersionAnalysis analysis = new ConstantThrustDispersionAnalysis(simulationConditions);
@@ -527,9 +527,9 @@ public class Simulation implements ChangeSource, Cloneable {
 			t2 = System.currentTimeMillis();
 			log.debug("Simulation: returning from simulator, simulation took " + (t2 - t1) + "ms");
 			final long endtime = System.currentTimeMillis();
-			if (dispAnalysis) {
-				System.out.println("Dispersion analysis time elapsed: " + (endtime - startTime) + "ms");
-			}
+			//if (simulationConditions.isDispersionAnalysisEnabled()) {
+			//	System.out.println("Dispersion analysis time elapsed: " + (endtime - startTime) + "ms");
+			//}
 
 		} catch (SimulationException e) {
 			throw e;

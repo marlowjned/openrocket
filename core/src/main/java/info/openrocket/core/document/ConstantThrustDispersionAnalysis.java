@@ -433,7 +433,7 @@ public class ConstantThrustDispersionAnalysis {
         }
 //        System.out.println("east is " + Arrays.toString(windAltEastSamples[0]));
 //        System.out.println("North is is " + Arrays.toString(windAltNorthSamples[0]));
-        System.out.println("magnitude is " + Arrays.toString(altToWindMap));
+//        System.out.println("magnitude is " + Arrays.toString(altToWindMap));
 //        System.out.println("Direction is " + Arrays.toString(altToWindDirectionMap));
 
 

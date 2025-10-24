@@ -67,6 +67,18 @@ public class SimulationConditions implements Monitorable, Cloneable {
 	private ModID modID = ModID.INVALID;
 	private ModID modIDadd = ModID.INVALID;
 
+    // CUSTOM DISPERSION ANALYSIS BITS
+    private boolean enableDispersionAnalysis = false; // defaults to false
+
+    public void setEnableDispersionAnalysis(boolean enable) {
+        this.enableDispersionAnalysis = enable;
+    }
+
+    public boolean isDispersionAnalysisEnabled() {
+        return enableDispersionAnalysis;
+    }
+    // END
+
 	public AerodynamicCalculator getAerodynamicCalculator() {
 		return aerodynamicCalculator;
 	}
