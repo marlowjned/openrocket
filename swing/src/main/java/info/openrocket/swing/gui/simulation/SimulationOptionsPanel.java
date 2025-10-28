@@ -22,6 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.MenuElement;
 import javax.swing.SwingUtilities;
 
@@ -221,6 +222,64 @@ class SimulationOptionsPanel extends JPanel {
 		});
 
 		sub.add(dispersionCheckBox, "spanx, wrap para");
+
+		// Iterations spinner (indented, only enabled when dispersion is checked)
+		JLabel iterationsLabel = new JLabel("  Iterations:");
+		SpinnerNumberModel iterationsModel = new SpinnerNumberModel(
+			conditions.getNumDispersionIterations(), // initial value
+			1,    // min
+			1000, // max
+			1     // step
+		);
+		JSpinner iterationsSpinner = new JSpinner(iterationsModel);
+		iterationsSpinner.setToolTipText("Number of Monte Carlo iterations to run");
+		iterationsSpinner.setEnabled(conditions.isDispersionAnalysisEnabled());
+		iterationsSpinner.addChangeListener(e -> {
+			conditions.setNumDispersionIterations((Integer) iterationsSpinner.getValue());
+		});
+
+		sub.add(iterationsLabel, "split 2");
+		sub.add(iterationsSpinner, "wrap");
+
+		// RASAero override checkbox (indented, only enabled when dispersion is checked)
+		JCheckBox rasaeroCheckBox = new JCheckBox("  Enable RASAero CD Override");
+		rasaeroCheckBox.setToolTipText("Use RASAero CSV data to override drag coefficient");
+		rasaeroCheckBox.setSelected(conditions.isRASAeroOverrideEnabled());
+		rasaeroCheckBox.setEnabled(conditions.isDispersionAnalysisEnabled());
+		rasaeroCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				conditions.setEnableRASAeroOverride(rasaeroCheckBox.isSelected());
+			}
+		});
+
+		sub.add(rasaeroCheckBox, "spanx, wrap para");
+
+		// Custom wind checkbox (indented, only enabled when dispersion is checked)
+		JCheckBox customWindCheckBox = new JCheckBox("  Enable Custom Wind Model");
+		customWindCheckBox.setToolTipText("Use custom wind data instead of OpenRocket's built-in wind model");
+		customWindCheckBox.setSelected(conditions.isCustomWindEnabled());
+		customWindCheckBox.setEnabled(conditions.isDispersionAnalysisEnabled());
+		customWindCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				conditions.setEnableCustomWind(customWindCheckBox.isSelected());
+			}
+		});
+
+		sub.add(customWindCheckBox, "spanx, wrap para");
+
+		// Update enable/disable state when dispersion checkbox changes
+		dispersionCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				boolean enabled = dispersionCheckBox.isSelected();
+				iterationsSpinner.setEnabled(enabled);
+				iterationsLabel.setEnabled(enabled);
+				rasaeroCheckBox.setEnabled(enabled);
+				customWindCheckBox.setEnabled(enabled);
+			}
+		});
 
 		// Reset to default button
 		JButton resetBtn = new JButton(trans.get("simedtdlg.but.resettodefault"));

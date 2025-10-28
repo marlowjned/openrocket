@@ -111,7 +111,7 @@ public class DispersionAnalysis {
     //Monte Carlo Sim variables
     private MonteCarloDistribution distribution;
 
-    int iterations = 5;
+    int iterations; // Set from SimulationConditions in constructor
     int iterNumber = 0; //the current sim iteration number, from 0 - iterations
     private double[] windSpeedSamples;
     private double[] windDirectionSamples;
@@ -142,6 +142,7 @@ public class DispersionAnalysis {
 
         this.conditions = conditions;
         conditions.setEnableDispersionAnalysis(true);
+        this.iterations = conditions.getNumDispersionIterations();
 
         //FUNDAMENTAL vars
         try {
@@ -251,19 +252,29 @@ public class DispersionAnalysis {
         //ITERABLE PARAMETERS
         conditions.setRandomSeed(randomSeed);
 
-        boolean variableWind = true; // boolean determines if variable wind model is used. Default is avg wind model
-        if (variableWind) {
-            setVariableWindModel(); //defines instance variable int[] wind
-            //casts simulator to basic event simulator, and calls method to update wind model in engine to variable wind model
-            ((BasicEventSimulationEngineDispersionAnalysis) simulator).setAltToWind(altToWindMap, altToWindDirectionMap,  distribution.getPressureIndexMap());
+        // Check if custom wind is enabled from simulation conditions
+        boolean useCustomWind = conditions.isCustomWindEnabled();
+
+        if (useCustomWind) {
+            // Use custom FAR wind data
+            boolean variableWind = true; // boolean determines if variable wind model is used. Default is avg wind model
+            if (variableWind) {
+                setVariableWindModel(); //defines instance variable int[] wind
+                //casts simulator to basic event simulator, and calls method to update wind model in engine to variable wind model
+                ((BasicEventSimulationEngineDispersionAnalysis) simulator).setAltToWind(altToWindMap, altToWindDirectionMap,  distribution.getPressureIndexMap());
+            } else {
+                conditions.setWindModel(windModel); //assuming normal wind, just set wind model directly
+                /**
+                 * Note, this is allowed because per simulation, wind speed is constant. Therefore, the conditions object doesn't
+                 need to change during a single simulation. However, for variable wind speed, the condition's average wind speed
+                 needs to change over the simulation, which requires editing it directly in the Basic Simulation engine, hence
+                 the different notations for doing variable wind vs. constant wind
+                 */
+            }
         } else {
-            conditions.setWindModel(windModel); //assuming normal wind, just set wind model directly
-            /**
-             * Note, this is allowed because per simulation, wind speed is constant. Therefore, the conditions object doesn't
-             need to change during a single simulation. However, for variable wind speed, the condition's average wind speed
-             needs to change over the simulation, which requires editing it directly in the Basic Simulation engine, hence
-             the different notations for doing variable wind vs. constant wind
-             */
+            // Use OpenRocket's default wind model (already set in conditions from SimulationOptions)
+            // Wind model is already configured in conditions.getWindModel() from the Simulation Options dialog
+            // No need to override it here
         }
 
     }
@@ -325,7 +336,7 @@ public class DispersionAnalysis {
 
     //saves data into dataTable
     public void saveData() {
-        System.out.println(index); //user can see iteration number on console
+        // System.out.println(index); //user can see iteration number on console
 
         data[index][0] = index / 1.0;  //saves index, /1.0 casts to double
         data[index][1] = averageWindSpeed;

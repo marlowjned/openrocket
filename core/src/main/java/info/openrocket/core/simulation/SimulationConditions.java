@@ -69,6 +69,9 @@ public class SimulationConditions implements Monitorable, Cloneable {
 
     // CUSTOM DISPERSION ANALYSIS BITS
     private boolean enableDispersionAnalysis = false; // defaults to false
+    private int numDispersionIterations = 5;
+    private boolean enableRASAeroOverride = false;
+    private boolean enableCustomWind = false;
 
     public void setEnableDispersionAnalysis(boolean enable) {
         this.enableDispersionAnalysis = enable;
@@ -76,6 +79,30 @@ public class SimulationConditions implements Monitorable, Cloneable {
 
     public boolean isDispersionAnalysisEnabled() {
         return enableDispersionAnalysis;
+    }
+
+    public void setNumDispersionIterations(int iterations) {
+        this.numDispersionIterations = iterations;
+    }
+
+    public int getNumDispersionIterations() {
+        return numDispersionIterations;
+    }
+
+    public void setEnableRASAeroOverride(boolean enable) {
+        this.enableRASAeroOverride = enable;
+    }
+
+    public boolean isRASAeroOverrideEnabled() {
+        return enableRASAeroOverride;
+    }
+
+    public void setEnableCustomWind(boolean enable) {
+        this.enableCustomWind = enable;
+    }
+
+    public boolean isCustomWindEnabled() {
+        return enableCustomWind;
     }
     // END
 

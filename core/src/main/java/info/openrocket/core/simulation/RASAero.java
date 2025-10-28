@@ -21,58 +21,21 @@ public class RASAero {
     public static HashMap<Double, List<Double>> machMap = new HashMap<>();
     public static HashMap<Double, HashMap<Double, Double>> CDMap = new HashMap<>();
 
-    /*
-    public static void readfile(){
-        List<Double> data = new ArrayList<>();
+    public static BivariateFunction ContinuousCD;
 
-        //replace w csv file
-        //flag if aoa is greater than 5
-        //filter aoa and machnum
+    public class RasaeroData {
+        double CD; // Drag Coefficient
+        double CN; // Normal Force Coefficient
+        double CL; // Lift Coefficient
+        double CNAlpha; // dCN/dAlpha, has Dynamic Stability applications
+        double CP; // Center of Pressure from rocket tip, gives specific values for each alpha
+        double CPGeneral; // Center of Pressure, gives conservative values for each mach, DS applications
+    };
 
-        //continuously read lines and input into machMap
-        try {
-
-            // really inefficient, store based on AOA, then mach num (3xN vs NxN)
-            System.out.println("Attempting to read RASAero file: " + file.getAbsolutePath());
-            System.out.println("File exists: " + file.exists());
-
-            Scanner scan = new Scanner(file);
-            scan.nextLine(); // skip first line
-            while (scan.hasNextLine()) {
-
-                String rawData = scan.nextLine();
-                //condition rawData to input into data array
-                String[] temp = rawData.split(",");
-
-                //input data read from file into data array
-                data = new ArrayList<>();
-                for (int i = 0; i < temp.length; i++) {
-                    Double tempVals = Double.parseDouble(temp[i]);
-                    data.add(tempVals);
-                }
-
-                double machStore = data.get(0);
-                double alphaStore = data.get(1);
-                //input into machMap
-
-                // probably insufficient, just sabotages the sim without giving a proper warning
-                if (alphaStore >= 5) {
-                    System.out.println("AOA greater than 5 degrees");
-                    break;
-                }
-
-                alphaMap.put(alphaStore, machMap);
-                alphaMap.get(alphaStore).put(machStore, data);
-            }
-            scan.close();
-
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found.");
-            e.printStackTrace();
-        }
-
-    }
-     */
+    // TODO: implement CD, CN, CL, CP into flight sims
+    // TODO: Bending script
+    // TODO: Dynamic Stability Script
+    // TODO: New Wind Data
 
     public static void readfile(){
         //List<Double> data = new ArrayList<>();
@@ -84,8 +47,8 @@ public class RASAero {
         //continuously read lines and input into machMap
         try {
 
-            System.out.println("Attempting to read RASAero file: " + file.getAbsolutePath());
-            System.out.println("File exists: " + file.exists());
+            // System.out.println("Attempting to read RASAero file: " + file.getAbsolutePath());
+            // System.out.println("File exists: " + file.exists());
 
             Scanner scan = new Scanner(file);
             scan.nextLine(); // skip first line
@@ -106,7 +69,7 @@ public class RASAero {
 
                 // TODO: probably insufficient, just sabotages the sim without giving a proper warning
                 if (alpha >= 5) {
-                    System.out.println("AOA greater than 5 degrees");
+                    // System.out.println("AOA greater than 5 degrees");
                     break;
                 }
 
@@ -117,10 +80,55 @@ public class RASAero {
                 CDMap.get(alpha).put(mach, cd);
 
             }
+
             scan.close();
 
+            // FUNCTION GENERATION FOR BIVARIATE INTERPOLATOR
+            // Assume all inner maps have the same mach/AOA keys
+            double[] alphaVals = CDMap.keySet().stream()
+                    .sorted()
+                    .mapToDouble(Double::doubleValue)
+                    .toArray();
+
+            Set<Double> machSet = CDMap.values().iterator().next().keySet();
+            double[] machVals = machSet.stream()
+                    .sorted()
+                    .mapToDouble(Double::doubleValue)
+                    .toArray();
+
+            double[][] CDVals = new double[machVals.length][alphaVals.length];
+            for (int j = 0; j < alphaVals.length; j++) {
+                double alpha = alphaVals[j];
+                for (int i = 0; i < machVals.length; i++) {
+                    double mach = machVals[i];
+                //for (int j = 0; j < alphaVals.length; j++) {
+                  //  double alpha = alphaVals[j];
+                    //CDVals[i][j] = CDMap.get(alpha).get(mach);
+                    Double CDValue =  CDMap.get(alpha).get(mach);
+                    if (CDValue == null) {
+                        // System.out.println("Warning: No CD data for Mach=" + mach + ", Alpha=" + alpha + ", using 0.5 as default");
+                        CDVals[i][j] = !Double.isNaN(CDVals[i-1][j]) ? CDVals[i-1][j] : 0.5;
+                    } else {
+                        CDVals[i][j] = CDValue;
+                    }
+
+                    // PROPOSED FIX (commented out):
+                    // Double cdValue = CDMap.get(alpha).get(mach);
+                    // if (cdValue == null) {
+                    //     System.out.println("Warning: No CD data for Mach=" + mach + ", Alpha=" + alpha + ", using 0.5 as default");
+                    //     CDVals[i][j] = 0.5; // reasonable default CD value
+                    // } else {
+                    //     CDVals[i][j] = cdValue;
+                    // }
+                }
+            }
+
+            // Generate Interpolator Function
+            BivariateGridInterpolator interpolator = new BicubicInterpolator();
+            ContinuousCD = interpolator.interpolate(machVals, alphaVals, CDVals);
+
         } catch (FileNotFoundException e) {
-            System.out.println("File not found.");
+            // System.out.println("File not found.");
             e.printStackTrace();
         }
 
@@ -141,27 +149,41 @@ public class RASAero {
     }
 
     public static List<Double> getDatMach(double MachNum){
-        System.out.println("getDatMach called, machMap.isEmpty(): " + machMap.isEmpty());
+        // System.out.println("getDatMach called, machMap.isEmpty(): " + machMap.isEmpty());
         if (machMap.isEmpty()){
-            System.out.println("machMap is empty, calling readfile()");
+            // System.out.println("machMap is empty, calling readfile()");
             readfile();
-            System.out.println("After readfile(), machMap size: " + machMap.size());
+            // System.out.println("After readfile(), machMap size: " + machMap.size());
         }
-        System.out.println("Looking for Mach: " + MachNum + " in machMap with keys: " + machMap.keySet());
+        // System.out.println("Looking for Mach: " + MachNum + " in machMap with keys: " + machMap.keySet());
         return machMap.get(MachNum);
     }
 
     public static double getCD(double MACH_NUM, double AOA){
-        System.out.println("getCD called, machMap.isEmpty(): " + CDMap.isEmpty());
+        // System.out.println("getCD called, machMap.isEmpty(): " + CDMap.isEmpty());
         if (CDMap.isEmpty()){
-            System.out.println("machMap is empty, calling readfile()");
+            // System.out.println("machMap is empty, calling readfile()");
             readfile();
-            System.out.println("After readfile(), machMap size: " + CDMap.size());
+            // System.out.println("After readfile(), machMap size: " + CDMap.size());
         }
-        System.out.println("Looking for Mach: " + MACH_NUM + " in machMap with keys: " + CDMap.keySet());
+        // System.out.println("Looking for Mach: " + MACH_NUM + " in machMap with keys: " + CDMap.keySet());
 
-        //return machMap.get(MACH_NUM);
-        return 1.0;
+        // If AOA is NaN, don't override CD - return NaN to signal caller to skip override
+        if (Double.isNaN(AOA) || AOA > 4) {
+            return Double.NaN;
+        }
+        //TODO: ALSO DO NOT OVERRIDE IF AOA > 4
+
+        // Clamp Mach and AOA to valid interpolation range
+        // RASAero data ranges from Mach 0.01-25, Alpha 0-4 degrees
+        double clampedMach = Double.isNaN(MACH_NUM) ? 0.01 : Math.max(0.01, MACH_NUM);
+        //double clampedAOA = Math.max(0.0, Math.min(Math.abs(AOA), 4.0));
+
+        // if (clampedMach != MACH_NUM || clampedAOA != Math.abs(AOA)) {
+        //     System.out.println("Warning: Clamped Mach=" + MACH_NUM + " to " + clampedMach + ", AOA=" + AOA + " to " + clampedAOA);
+        // }
+
+        return ContinuousCD.value(clampedMach, AOA);
     }
 
 

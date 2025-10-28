@@ -88,6 +88,9 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 	private SimulationStepperMethod stepperMethodChoice = SimulationStepperMethod.RK4;
 
 	private boolean enableDispersionAnalysis = false;
+	private int numDispersionIterations = 5;
+	private boolean enableRASAeroOverride = false;
+	private boolean enableCustomWind = false;
 
 	public SimulationOptions() {
 		averageWindModel = new PinkNoiseWindModel(randomSeed);
@@ -311,6 +314,42 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 		fireChangeEvent();
 	}
 
+	public int getNumDispersionIterations() {
+		return numDispersionIterations;
+	}
+
+	public void setNumDispersionIterations(int iterations) {
+		if (this.numDispersionIterations == iterations) {
+			return;
+		}
+		this.numDispersionIterations = Math.max(1, Math.min(iterations, 1000)); // Clamp between 1 and 1000
+		fireChangeEvent();
+	}
+
+	public boolean isRASAeroOverrideEnabled() {
+		return enableRASAeroOverride;
+	}
+
+	public void setEnableRASAeroOverride(boolean enable) {
+		if (this.enableRASAeroOverride == enable) {
+			return;
+		}
+		this.enableRASAeroOverride = enable;
+		fireChangeEvent();
+	}
+
+	public boolean isCustomWindEnabled() {
+		return enableCustomWind;
+	}
+
+	public void setEnableCustomWind(boolean enable) {
+		if (this.enableCustomWind == enable) {
+			return;
+		}
+		this.enableCustomWind = enable;
+		fireChangeEvent();
+	}
+
 	public boolean isISAAtmosphere() {
 		return useISA;
 	}
@@ -436,6 +475,9 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 
 			copy.windModelType = this.windModelType;
 			copy.enableDispersionAnalysis = this.enableDispersionAnalysis;
+			copy.numDispersionIterations = this.numDispersionIterations;
+			copy.enableRASAeroOverride = this.enableRASAeroOverride;
+			copy.enableCustomWind = this.enableCustomWind;
 
 			// Create a new list for listeners
 			copy.listeners = new ArrayList<>();
@@ -555,7 +597,10 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 				this.windModelType == o.windModelType &&
 				this.averageWindModel.equals(o.averageWindModel) &&
 				this.multiLevelPinkNoiseWindModel.equals(o.multiLevelPinkNoiseWindModel) &&
-				this.enableDispersionAnalysis == o.enableDispersionAnalysis;
+				this.enableDispersionAnalysis == o.enableDispersionAnalysis &&
+				this.numDispersionIterations == o.numDispersionIterations &&
+				this.enableRASAeroOverride == o.enableRASAeroOverride &&
+				this.enableCustomWind == o.enableCustomWind;
 	}
 
 	/**
@@ -618,6 +663,9 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 		conditions.setMaximumAngleStep(getMaximumStepAngle());
 
 		conditions.setEnableDispersionAnalysis(isDispersionAnalysisEnabled());
+		conditions.setNumDispersionIterations(getNumDispersionIterations());
+		conditions.setEnableRASAeroOverride(isRASAeroOverrideEnabled());
+		conditions.setEnableCustomWind(isCustomWindEnabled());
 
 		return conditions;
 	}

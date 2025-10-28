@@ -398,9 +398,34 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
 
 				previousSimulationTime = currentStatus.getSimulationTime();
 
-				// Override rocket cd values w/ RASAero data
-				boolean RASAeroData = false; //TODO: make a way for this to be toggled/accessed easily when running
+				// Override rocket cd values with RASAero data
+				boolean RASAeroData = simCond.isRASAeroOverrideEnabled(); // Read from simulation conditions
 
+                if (RASAeroData) {
+                    double curMachNum = currentStatus.getFlightDataBranch().getLast(FlightDataType.TYPE_MACH_NUMBER);
+                    double curAOA = currentStatus.getFlightDataBranch().getLast(FlightDataType.TYPE_AOA);
+
+                    double RASAeroCD = RASAero.getCD(curMachNum, curAOA);
+                    System.out.println("RASAeroCD: " + RASAeroCD);
+
+                    // TODO: ADD CL AND CN
+                    // Only override CD if RASAero returned a valid value (not NaN)
+                    // NaN indicates we should skip override (e.g., when AOA is invalid post deployment)
+                    if (!Double.isNaN(RASAeroCD)) {
+                        // Valid RASAero data
+                        Rocket rocketHold = this.simCond.getRocket();
+                        rocketHold.setOverrideCD(RASAeroCD);
+                        rocketHold.setCDOverridden(true);
+                        rocketHold.setSubcomponentsOverriddenCD(true);
+                    } else {
+                        // Invalid data
+                        Rocket rocketHold = this.simCond.getRocket();
+                        rocketHold.setCDOverridden(false);
+                        rocketHold.setSubcomponentsOverriddenCD(false);
+                    }
+                }
+
+                /*
 				if (RASAeroData) {
 					double RASAeroCD = 1; // default value if RASAero data not found
 					System.out.println("query RASAero cds");
@@ -428,6 +453,8 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
 					}
 
 				}
+
+                 */
 
 			}
 
