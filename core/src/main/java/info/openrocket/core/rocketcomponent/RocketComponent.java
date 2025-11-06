@@ -125,6 +125,12 @@ public abstract class RocketComponent implements ChangeSource, Cloneable, Iterab
 	private boolean cdOverridden = false;
 	private boolean overrideSubcomponentsCD = false;
 	private RocketComponent CDOverriddenBy = null;	// The (super-)parent component that overrides the CD of this component
+
+    // Override CN
+    private double overrideCN = 0;
+    private boolean cnOverridden = false;
+    private boolean overrideSubcomponentsCN = false;
+    private RocketComponent CNOverriddenBy = null;	// The (super-)parent component that overrides the CD of this component
 	
 	// User-given name of the component
     protected String name = null;
@@ -864,6 +870,15 @@ public abstract class RocketComponent implements ChangeSource, Cloneable, Iterab
 			(parent.isCDOverriddenByAncestor() ||
 			 (parent.isCDOverridden() && parent.isSubcomponentsOverriddenCD()));
 	}
+
+    /*
+    public final boolean isCNOverriddenByAncestor() {
+        mutex.verify();
+        return (null != parent) &&
+                (parent.isCNOverriddenByAncestor() ||
+                        (parent.isCDOverridden() && parent.isSubcomponentsOverriddenCD()));
+    }
+     */
 	
 	
 	/**
@@ -1017,6 +1032,19 @@ public abstract class RocketComponent implements ChangeSource, Cloneable, Iterab
 			}
 		}
 	}
+
+    void overrideSubcomponentsCN(boolean override) {
+        for (RocketComponent c : this.children) {
+            if (c.isCDOverriddenByAncestor() != override) {
+
+                if (!override && c.isCDOverridden() && c.isSubcomponentsOverriddenCD()) {
+                    c.overrideSubcomponentsCD(true);
+                } else {
+                    c.overrideSubcomponentsCD(override);
+                }
+            }
+        }
+    }
 						
 	/**
 	 * Return whether the option to override all subcomponents is enabled or not.
@@ -1053,6 +1081,13 @@ public abstract class RocketComponent implements ChangeSource, Cloneable, Iterab
 	public RocketComponent getCDOverriddenBy() {
 		return CDOverriddenBy;
 	}
+
+    /**
+     * Returns which (super-)parent overrides the CD of this component, or null if no parent does so.
+     */
+    public RocketComponent getCNOverriddenBy() {
+        return CNOverriddenBy;
+    }
 
 	private void updateChildrenMassOverriddenBy() {
 		RocketComponent overriddenBy = massOverridden && overrideSubcomponentsMass ? this : null;

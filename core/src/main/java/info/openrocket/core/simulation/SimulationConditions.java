@@ -72,6 +72,8 @@ public class SimulationConditions implements Monitorable, Cloneable {
     private int numDispersionIterations = 5;
     private boolean enableRASAeroOverride = false;
     private boolean enableCustomWind = false;
+    private boolean enableBendingAnalysis = false;
+    private boolean enableDynamicStability = false;
 
     public void setEnableDispersionAnalysis(boolean enable) {
         this.enableDispersionAnalysis = enable;
@@ -103,6 +105,22 @@ public class SimulationConditions implements Monitorable, Cloneable {
 
     public boolean isCustomWindEnabled() {
         return enableCustomWind;
+    }
+
+    public void setEnableBendingAnalysis(boolean enable) {
+        this.enableBendingAnalysis = enable;
+    }
+
+    public boolean isBendingAnalysisEnabled() {
+        return enableBendingAnalysis;
+    }
+
+    public void setEnableDynamicStability(boolean enable) {
+        this.enableDynamicStability = enable;
+    }
+
+    public boolean isDynamicStabilityEnabled() {
+        return enableDynamicStability;
     }
     // END
 

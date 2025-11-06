@@ -15,21 +15,155 @@ public class RASAero {
 
     // TODO: Configure path to RASAero CSV file
     public static File file = new File("core/src/main/resources/Rasaero/Eureka3_Machnum_RASAero2_sim.CSV");
-    //figure out a better data structure for this
 
-    public static HashMap<Double, HashMap<Double, List<Double>> > alphaMap = new HashMap<>();
-    public static HashMap<Double, List<Double>> machMap = new HashMap<>();
-    public static HashMap<Double, HashMap<Double, Double>> CDMap = new HashMap<>();
-
+    public static RASAeroDataMaps RASMaps = null;
     public static BivariateFunction ContinuousCD;
+    public static BivariateFunction ContinuousCL;
+    public static BivariateFunction ContinuousCN;
+    public static BivariateFunction ContinuousCNAlpha;
+    public static BivariateFunction ContinuousCP;
+    public static BivariateFunction ContinuousCPGeneral;
+    public static BivariateFunction ContinuousReynoldsNum;
 
-    public class RasaeroData {
-        double CD; // Drag Coefficient
-        double CN; // Normal Force Coefficient
-        double CL; // Lift Coefficient
-        double CNAlpha; // dCN/dAlpha, has Dynamic Stability applications
-        double CP; // Center of Pressure from rocket tip, gives specific values for each alpha
-        double CPGeneral; // Center of Pressure, gives conservative values for each mach, DS applications
+    public static class RASAeroData {
+        double CD;          // Drag Coefficient
+        double CL;          // Lift Coefficient
+        double CN;          // Normal Force Coefficient
+        double CNAlpha;     // dCN/dAlpha, has Dynamic Stability applications
+        double CP;          // Center of Pressure from rocket tip, gives specific values for each alpha
+        double CPGeneral;   // Center of Pressure, gives conservative values for each mach, DS applications
+        double ReynoldsNum; // Maybe useful one day
+
+    };
+
+    public static class RASAeroDataMaps {
+        public HashMap<Double, Integer> alphaIndex;
+        public HashMap<Double, Integer> machIndex;
+        public List<Double> alphaKeys;
+        public List<Double> machKeys;
+
+        public List<List<Double>> CDVals;
+        public List<List<Double>> CLVals;
+        public List<List<Double>> CNVals;
+        public List<List<Double>> CNAlphaVals;
+        public List<List<Double>> CPVals;
+        public List<List<Double>> CPGeneralVals;
+        public List<List<Double>> ReynoldsNumVals;
+
+        public RASAeroDataMaps() {
+
+            alphaIndex = new HashMap<>();
+            machIndex = new HashMap<>();
+            alphaKeys = new ArrayList<>();
+            machKeys = new ArrayList<>();
+
+            CDVals = new ArrayList<>();
+            CLVals = new ArrayList<>();
+            CNVals = new ArrayList<>();
+            CNAlphaVals = new ArrayList<>();
+            CPVals = new ArrayList<>();
+            CPGeneralVals = new ArrayList<>();
+            ReynoldsNumVals = new ArrayList<>();
+
+        }
+
+        public void addDataRow(List<Double> DataRow) {
+            // Check if mach, alpha vals are already in key lists
+            if (!machIndex.containsKey(DataRow.get(0))) {
+                machIndex.put(DataRow.get(0), machIndex.size());
+                machKeys.add(DataRow.get(0));
+
+                // Resize: add a null row
+                List<Double> newMachRow =  new ArrayList<>();
+                for (int i = 0; i < alphaKeys.size(); i++) {
+                    newMachRow.add(null);
+                }
+
+                CDVals.add(new ArrayList<>(newMachRow));
+                CLVals.add(new ArrayList<>(newMachRow));
+                CNVals.add(new ArrayList<>(newMachRow));
+                CNAlphaVals.add(new ArrayList<>(newMachRow));
+                CPVals.add(new ArrayList<>(newMachRow));
+                CPGeneralVals.add(new ArrayList<>(newMachRow));
+                ReynoldsNumVals.add(new ArrayList<>(newMachRow));
+
+            }
+
+            if (!alphaIndex.containsKey(DataRow.get(1))) {
+                alphaIndex.put(DataRow.get(1), alphaIndex.size());
+                alphaKeys.add(DataRow.get(1));
+
+                // Resize: add null to the end of every row
+                for (List<Double> row : CDVals) { row.add(null); }
+                for (List<Double> row : CLVals) { row.add(null); }
+                for (List<Double> row : CNVals) { row.add(null); }
+                for (List<Double> row : CNAlphaVals) { row.add(null); }
+                for (List<Double> row : CPVals) { row.add(null); }
+                for (List<Double> row : CPGeneralVals) { row.add(null); }
+                for (List<Double> row : ReynoldsNumVals) { row.add(null); }
+
+            }
+
+            int currMachIndex = machIndex.get(DataRow.get(0));
+            int currAlphaIndex = alphaIndex.get(DataRow.get(1));
+
+            CDVals.get(currMachIndex).set(currAlphaIndex, DataRow.get(2));
+            CLVals.get(currMachIndex).set(currAlphaIndex, DataRow.get(7));
+            CNVals.get(currMachIndex).set(currAlphaIndex, DataRow.get(8));
+            CNAlphaVals.get(currMachIndex).set(currAlphaIndex, DataRow.get(11));
+            CPVals.get(currMachIndex).set(currAlphaIndex, DataRow.get(12));
+            CPGeneralVals.get(currMachIndex).set(currAlphaIndex, DataRow.get(13));
+            ReynoldsNumVals.get(currMachIndex).set(currAlphaIndex, DataRow.get(14));
+
+        }
+
+/*
+        public RASAeroData getRASAeroData(double MachNum, double Alpha) {
+            RASAeroData rasData = new RASAeroData();
+            int currMachIndex = machIndex.get(MachNum);
+            int currAlphaIndex = alphaIndex.get(Alpha);
+
+            rasData.CD = CDVals.get(currMachIndex).get(currAlphaIndex);
+            rasData.CL = CLVals.get(currMachIndex).get(currAlphaIndex);
+            rasData.CN = CNVals.get(currMachIndex).get(currAlphaIndex);
+            rasData.CNAlpha = CNAlphaVals.get(currMachIndex).get(currAlphaIndex);
+            rasData.CP = CPVals.get(currMachIndex).get(currAlphaIndex);
+            rasData.CPGeneral = CPGeneralVals.get(currMachIndex).get(currAlphaIndex);
+            rasData.ReynoldsNum = ReynoldsNumVals.get(currMachIndex).get(currAlphaIndex);
+
+            return rasData;
+
+        }
+        */
+
+        public void fillInNull() {
+            fillInNullList(CDVals);
+            fillInNullList(CLVals);
+            fillInNullList(CNVals);
+            fillInNullList(CNAlphaVals);
+            fillInNullList(CPVals);
+            fillInNullList(CPGeneralVals);
+            fillInNullList(ReynoldsNumVals);
+
+        }
+
+        private void fillInNullList(List<List<Double>> values) {
+            for (int i = 0; i < values.size(); i++) {
+                for (int j = 0; j < values.get(i).size(); j++) {
+                    if (values.get(i).get(j) == null) {
+                        // Use previous mach number's value (i-1)
+                        if (i > 0 && values.get(i-1).get(j) != null) {
+                            values.get(i).set(j, values.get(i-1).get(j));
+                        } else {
+                            values.get(i).set(j, 0.0); // Temp default if all else fails
+                            // TODO: make this better
+                        }
+                    }
+                }
+            }
+        }
+
+
     };
 
     // TODO: implement CD, CN, CL, CP into flight sims
@@ -37,155 +171,186 @@ public class RASAero {
     // TODO: Dynamic Stability Script
     // TODO: New Wind Data
 
-    public static void readfile(){
-        //List<Double> data = new ArrayList<>();
-
-        //replace w csv file
-        //flag if aoa is greater than 5
-        //filter aoa and machnum
-
-        //continuously read lines and input into machMap
+    public static void readFile(){
         try {
-
-            // System.out.println("Attempting to read RASAero file: " + file.getAbsolutePath());
-            // System.out.println("File exists: " + file.exists());
+            RASMaps = new RASAeroDataMaps();
 
             Scanner scan = new Scanner(file);
-            scan.nextLine(); // skip first line
+            scan.nextLine(); // Skips first line
 
             while (scan.hasNextLine()) {
-
                 String rawData = scan.nextLine();
                 String[] tempData = rawData.split(",");
 
                 List<Double> data = new ArrayList<>();
-                for (String tempDataPT : tempData) {
-                    data.add(Double.parseDouble(tempDataPT));
+                for (String tempDatum : tempData) {
+                    data.add(Double.parseDouble(tempDatum));
                 }
-
-                double mach = data.get(0);
-                double alpha = data.get(1);
-                double cd = data.get(2);
-
-                // TODO: probably insufficient, just sabotages the sim without giving a proper warning
-                if (alpha >= 5) {
-                    // System.out.println("AOA greater than 5 degrees");
-                    break;
-                }
-
-                // Creates row unless it exists so that data doesn't get overridden
-                if (!CDMap.containsKey(alpha)) {
-                    CDMap.put(alpha, new HashMap<>());
-                }
-                CDMap.get(alpha).put(mach, cd);
+                RASMaps.addDataRow(data);
 
             }
 
             scan.close();
 
-            // FUNCTION GENERATION FOR BIVARIATE INTERPOLATOR
-            // Assume all inner maps have the same mach/AOA keys
-            double[] alphaVals = CDMap.keySet().stream()
-                    .sorted()
-                    .mapToDouble(Double::doubleValue)
-                    .toArray();
-
-            Set<Double> machSet = CDMap.values().iterator().next().keySet();
-            double[] machVals = machSet.stream()
-                    .sorted()
-                    .mapToDouble(Double::doubleValue)
-                    .toArray();
-
-            double[][] CDVals = new double[machVals.length][alphaVals.length];
-            for (int j = 0; j < alphaVals.length; j++) {
-                double alpha = alphaVals[j];
-                for (int i = 0; i < machVals.length; i++) {
-                    double mach = machVals[i];
-                //for (int j = 0; j < alphaVals.length; j++) {
-                  //  double alpha = alphaVals[j];
-                    //CDVals[i][j] = CDMap.get(alpha).get(mach);
-                    Double CDValue =  CDMap.get(alpha).get(mach);
-                    if (CDValue == null) {
-                        // System.out.println("Warning: No CD data for Mach=" + mach + ", Alpha=" + alpha + ", using 0.5 as default");
-                        CDVals[i][j] = !Double.isNaN(CDVals[i-1][j]) ? CDVals[i-1][j] : 0.5;
-                    } else {
-                        CDVals[i][j] = CDValue;
-                    }
-
-                    // PROPOSED FIX (commented out):
-                    // Double cdValue = CDMap.get(alpha).get(mach);
-                    // if (cdValue == null) {
-                    //     System.out.println("Warning: No CD data for Mach=" + mach + ", Alpha=" + alpha + ", using 0.5 as default");
-                    //     CDVals[i][j] = 0.5; // reasonable default CD value
-                    // } else {
-                    //     CDVals[i][j] = cdValue;
-                    // }
-                }
-            }
-
-            // Generate Interpolator Function
-            BivariateGridInterpolator interpolator = new BicubicInterpolator();
-            ContinuousCD = interpolator.interpolate(machVals, alphaVals, CDVals);
+            RASMaps.fillInNull(); // TODO: Add sorter so keys are guaranteed monotonic
+            generateInterpolators();
 
         } catch (FileNotFoundException e) {
-            // System.out.println("File not found.");
             e.printStackTrace();
+
         }
 
     }
 
-    //reads specific file input filename TODO: add to path st file can be located auto
-    public static void readFile(String fileName){
-        file  = new File(fileName); // make it so this adds filename to path (talk to eric)
-        readfile();
+
+    private static void generateInterpolators() {
+        // Convert Lists to arrays for interpolator
+        double[] alphaArray = RASMaps.alphaKeys.stream()
+                .mapToDouble(Double::doubleValue).toArray();
+        double[] machArray = RASMaps.machKeys.stream()
+                .mapToDouble(Double::doubleValue).toArray();
+
+        // Convert 2D Lists to 2D arrays [mach][alpha]
+        double[][] cdArray = to2DArray(RASMaps.CDVals);
+        double[][] clArray = to2DArray(RASMaps.CLVals);
+        double[][] cnArray = to2DArray(RASMaps.CNVals);
+        double[][] cnAlphaArray = to2DArray(RASMaps.CNAlphaVals);
+        double[][] cpArray = to2DArray(RASMaps.CPVals);
+        double[][] cpGeneralArray = to2DArray(RASMaps.CPGeneralVals);
+        double[][] reynoldsArray = to2DArray(RASMaps.ReynoldsNumVals);
+
+        // Create interpolators
+        BivariateGridInterpolator interpolator = new BicubicInterpolator();
+        ContinuousCD = interpolator.interpolate(machArray, alphaArray, cdArray);
+        ContinuousCN = interpolator.interpolate(machArray, alphaArray, cnArray);
+        ContinuousCL = interpolator.interpolate(machArray, alphaArray, clArray);
+        ContinuousCP = interpolator.interpolate(machArray, alphaArray, cpArray);
+        ContinuousCNAlpha = interpolator.interpolate(machArray, alphaArray, cnAlphaArray);
+        ContinuousCPGeneral = interpolator.interpolate(machArray, alphaArray, cpGeneralArray);
+        ContinuousReynoldsNum =  interpolator.interpolate(machArray, alphaArray, reynoldsArray);
+
     }
 
-    //returns greater data structure (make hashmap)
-    public static HashMap<Double, List<Double>> getData(){
-        if (machMap.isEmpty()){
-            readfile();
+    private static double[][] to2DArray(List<List<Double>> listOfLists) {
+        // TODO: Just make the lists 2D arrays in the first place
+        int rows = listOfLists.size();
+        int cols = listOfLists.get(0).size();
+        double[][] array = new double[rows][cols];
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                Double val = listOfLists.get(i).get(j);
+                array[i][j] = (val != null) ? val : 0.0; // Handle nulls
+            }
         }
-        return machMap;
+        return array;
     }
 
-    public static List<Double> getDatMach(double MachNum){
-        // System.out.println("getDatMach called, machMap.isEmpty(): " + machMap.isEmpty());
-        if (machMap.isEmpty()){
-            // System.out.println("machMap is empty, calling readfile()");
-            readfile();
-            // System.out.println("After readfile(), machMap size: " + machMap.size());
+
+    public static RASAeroData getRASAeroData(double MachNum, double Alpha){
+        RASAeroData data = new RASAeroData();
+        if (RASMaps == null) {
+            readFile();
         }
-        // System.out.println("Looking for Mach: " + MachNum + " in machMap with keys: " + machMap.keySet());
-        return machMap.get(MachNum);
+
+        if (Double.isNaN(Alpha) || Alpha > 4) {
+            return data;
+        }
+        double clampedMach = Double.isNaN(MachNum) ? 0.01 : Math.max(0.01, MachNum);
+
+        data.CD = ContinuousCD.value(clampedMach, Alpha);
+        data.CL = ContinuousCL.value(clampedMach, Alpha);
+        data.CN = ContinuousCN.value(clampedMach, Alpha);
+        data.CNAlpha = ContinuousCNAlpha.value(clampedMach, Alpha);
+        data.CP = ContinuousCP.value(clampedMach, Alpha);
+        data.CPGeneral = ContinuousCPGeneral.value(clampedMach, Alpha);
+        data.ReynoldsNum = ContinuousReynoldsNum.value(clampedMach, Alpha);
+        return data;
+
     }
 
     public static double getCD(double MACH_NUM, double AOA){
-        // System.out.println("getCD called, machMap.isEmpty(): " + CDMap.isEmpty());
-        if (CDMap.isEmpty()){
-            // System.out.println("machMap is empty, calling readfile()");
-            readfile();
-            // System.out.println("After readfile(), machMap size: " + CDMap.size());
+        if (RASMaps == null || RASMaps.CDVals.isEmpty()){
+            readFile();
         }
-        // System.out.println("Looking for Mach: " + MACH_NUM + " in machMap with keys: " + CDMap.keySet());
+        if (Double.isNaN(AOA) || AOA > 4) {
+            return Double.NaN; // Signals to skip override
+        }
+        double clampedMach = Double.isNaN(MACH_NUM) ? 0.01 : Math.max(0.01, MACH_NUM);
+        return ContinuousCD.value(clampedMach, AOA);
 
-        // If AOA is NaN, don't override CD - return NaN to signal caller to skip override
+    }
+
+    public static double getCL(double MACH_NUM, double AOA){
+        if (RASMaps == null || RASMaps.CLVals.isEmpty()) {
+            readFile();
+        }
         if (Double.isNaN(AOA) || AOA > 4) {
             return Double.NaN;
         }
-        //TODO: ALSO DO NOT OVERRIDE IF AOA > 4
-
-        // Clamp Mach and AOA to valid interpolation range
-        // RASAero data ranges from Mach 0.01-25, Alpha 0-4 degrees
         double clampedMach = Double.isNaN(MACH_NUM) ? 0.01 : Math.max(0.01, MACH_NUM);
-        //double clampedAOA = Math.max(0.0, Math.min(Math.abs(AOA), 4.0));
+        return ContinuousCL.value(clampedMach, AOA);
 
-        // if (clampedMach != MACH_NUM || clampedAOA != Math.abs(AOA)) {
-        //     System.out.println("Warning: Clamped Mach=" + MACH_NUM + " to " + clampedMach + ", AOA=" + AOA + " to " + clampedAOA);
-        // }
-
-        return ContinuousCD.value(clampedMach, AOA);
     }
 
+    public static double getCN(double MACH_NUM, double AOA){
+        if (RASMaps == null || RASMaps.CNVals.isEmpty()) {
+            readFile();
+        }
+        if (Double.isNaN(AOA) || AOA > 4) {
+            return Double.NaN;
+        }
+        double clampedMach = Double.isNaN(MACH_NUM) ? 0.01 : Math.max(0.01, MACH_NUM);
+        return ContinuousCN.value(clampedMach, AOA);
 
+    }
+
+    public static double getCNAlpha(double MACH_NUM, double AOA){
+        if (RASMaps == null || RASMaps.CNAlphaVals.isEmpty()) {
+            readFile();
+        }
+        if (Double.isNaN(AOA) || AOA > 4) {
+            return Double.NaN;
+        }
+        double clampedMach = Double.isNaN(MACH_NUM) ? 0.01 : Math.max(0.01, MACH_NUM);
+        return ContinuousCNAlpha.value(clampedMach, AOA);
+
+    }
+
+    public static double getCP(double MACH_NUM, double AOA){
+        if (RASMaps == null || RASMaps.CPVals.isEmpty()) {
+            readFile();
+        }
+        if (Double.isNaN(AOA) || AOA > 4) {
+            return Double.NaN;
+        }
+        double clampedMach = Double.isNaN(MACH_NUM) ? 0.01 : Math.max(0.01, MACH_NUM);
+        return ContinuousCP.value(clampedMach, AOA);
+
+    }
+
+    public static double getCPGeneral(double MACH_NUM, double AOA){
+        if (RASMaps == null || RASMaps.CPGeneralVals.isEmpty()) {
+            readFile();
+        }
+        if (Double.isNaN(AOA) || AOA > 4) {
+            return Double.NaN;
+        }
+        double clampedMach = Double.isNaN(MACH_NUM) ? 0.01 : Math.max(0.01, MACH_NUM);
+        return ContinuousCPGeneral.value(clampedMach, AOA);
+
+    }
+
+    public static double getReynoldsNum(double MACH_NUM, double AOA){
+        if (RASMaps == null || RASMaps.ReynoldsNumVals.isEmpty()) {
+            readFile();
+        }
+        if (Double.isNaN(AOA) || AOA > 4) {
+            return Double.NaN;
+        }
+        double clampedMach = Double.isNaN(MACH_NUM) ? 0.01 : Math.max(0.01, MACH_NUM);
+        return ContinuousReynoldsNum.value(clampedMach, AOA);
+
+    }
 
 }

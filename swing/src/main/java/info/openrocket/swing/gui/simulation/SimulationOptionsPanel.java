@@ -255,6 +255,34 @@ class SimulationOptionsPanel extends JPanel {
 
 		sub.add(rasaeroCheckBox, "spanx, wrap para");
 
+		// Bending analysis checkbox (indented, requires RASAero data)
+		JCheckBox bendingCheckBox = new JCheckBox("  Enable Bending Analysis");
+		bendingCheckBox.setToolTipText("Calculate component-by-component bending moments using RASAero data");
+		bendingCheckBox.setSelected(conditions.isBendingAnalysisEnabled());
+		bendingCheckBox.setEnabled(conditions.isDispersionAnalysisEnabled() && conditions.isRASAeroOverrideEnabled());
+		bendingCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				conditions.setEnableBendingAnalysis(bendingCheckBox.isSelected());
+			}
+		});
+
+		sub.add(bendingCheckBox, "spanx, wrap para");
+
+		// Dynamic stability checkbox (indented, requires RASAero data)
+		JCheckBox dynamicStabilityCheckBox = new JCheckBox("  Enable Dynamic Stability Analysis");
+		dynamicStabilityCheckBox.setToolTipText("Calculate dynamic stability parameters throughout flight using RASAero data");
+		dynamicStabilityCheckBox.setSelected(conditions.isDynamicStabilityEnabled());
+		dynamicStabilityCheckBox.setEnabled(conditions.isDispersionAnalysisEnabled() && conditions.isRASAeroOverrideEnabled());
+		dynamicStabilityCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				conditions.setEnableDynamicStability(dynamicStabilityCheckBox.isSelected());
+			}
+		});
+
+		sub.add(dynamicStabilityCheckBox, "spanx, wrap para");
+
 		// Custom wind checkbox (indented, only enabled when dispersion is checked)
 		JCheckBox customWindCheckBox = new JCheckBox("  Enable Custom Wind Model");
 		customWindCheckBox.setToolTipText("Use custom wind data instead of OpenRocket's built-in wind model");
@@ -278,6 +306,18 @@ class SimulationOptionsPanel extends JPanel {
 				iterationsLabel.setEnabled(enabled);
 				rasaeroCheckBox.setEnabled(enabled);
 				customWindCheckBox.setEnabled(enabled);
+				bendingCheckBox.setEnabled(enabled && rasaeroCheckBox.isSelected());
+				dynamicStabilityCheckBox.setEnabled(enabled && rasaeroCheckBox.isSelected());
+			}
+		});
+
+		// Update bending and dynamic stability checkboxes when RASAero checkbox changes
+		rasaeroCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				boolean enabled = dispersionCheckBox.isSelected() && rasaeroCheckBox.isSelected();
+				bendingCheckBox.setEnabled(enabled);
+				dynamicStabilityCheckBox.setEnabled(enabled);
 			}
 		});
 

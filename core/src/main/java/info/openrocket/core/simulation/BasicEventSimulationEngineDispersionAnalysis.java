@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.List;
 
 
 public class BasicEventSimulationEngineDispersionAnalysis implements SimulationEngine {
@@ -69,6 +68,9 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
 	//NEW variables for thrust curve heavybulb
 	private double [] thrust;
 	private double [] time;
+
+	// Track last bending data capture time
+	private double lastBendingCaptureTime = 0.0;
 
 	//TODO: New method eric
 	public SimulationStatus getCurrentStatus(){
@@ -206,6 +208,17 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
 		currentStatus.getEventQueue().add(new FlightEvent(FlightEvent.Type.LAUNCH, 0, simulationConditions.getRocket()));
 		toSimulate.push(currentStatus);
 
+		// Reset bending analysis at start of simulation
+		if (simulationConditions.isBendingAnalysisEnabled()) {
+			info.openrocket.core.document.BendingAnalysis.reset();
+			lastBendingCaptureTime = 0.0;
+		}
+
+		// Reset dynamic stability at start of simulation
+		if (simulationConditions.isDynamicStabilityEnabled()) {
+			info.openrocket.core.document.DynamicStability.reset();
+		}
+
 		SimulationListenerHelper.fireStartSimulation(currentStatus);
 		do {
 			if (toSimulate.peek() == null) {
@@ -231,6 +244,44 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
 		} while (!toSimulate.isEmpty());
 
 		SimulationListenerHelper.fireEndSimulation(currentStatus, null);
+
+		// Export bending analysis results if enabled
+		if (simulationConditions.isBendingAnalysisEnabled() &&
+		    info.openrocket.core.document.BendingAnalysis.hasResults()) {
+			info.openrocket.core.document.BendingAnalysis.BendingAnalysisResults results =
+				info.openrocket.core.document.BendingAnalysis.getCurrentAnalysisResults();
+
+			log.info("Bending Analysis: Max moment = " + results.getMaxBendingMoment() +
+			         " N⋅m at t = " + results.getMaxBendingMomentTime() + " s");
+
+			try {
+				String filename = "bending_analysis_" + System.currentTimeMillis() + ".csv";
+				results.exportToCSV(filename);
+				log.info("Bending analysis exported to: " + filename);
+			} catch (Exception e) {
+				log.warn("Failed to export bending analysis: " + e.getMessage());
+			}
+		}
+
+		// Export dynamic stability analysis results if enabled
+		if (simulationConditions.isDynamicStabilityEnabled() &&
+		    info.openrocket.core.document.DynamicStability.hasResults()) {
+			info.openrocket.core.document.DynamicStability.DynamicStabilityResults results =
+				info.openrocket.core.document.DynamicStability.getCurrentResults();
+
+			log.info("Dynamic Stability: Min damping ratio = " +
+			         (results.minDampingRatio != null ? results.minDampingRatio.dampingRatio : "N/A") +
+			         " at t = " +
+			         (results.minDampingRatio != null ? results.minDampingRatio.time : "N/A") + " s");
+
+			try {
+				String filename = "dynamic_stability_" + System.currentTimeMillis() + ".csv";
+				results.exportToCSV(filename);
+				log.info("Dynamic stability exported to: " + filename);
+			} catch (Exception e) {
+				log.warn("Failed to export dynamic stability: " + e.getMessage());
+			}
+		}
 
 		if (!flightData.getWarningSet().isEmpty()) {
 			log.info("Warnings at the end of simulation:  " + flightData.getWarningSet());
@@ -406,7 +457,7 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
                     double curAOA = currentStatus.getFlightDataBranch().getLast(FlightDataType.TYPE_AOA);
 
                     double RASAeroCD = RASAero.getCD(curMachNum, curAOA);
-                    System.out.println("RASAeroCD: " + RASAeroCD);
+                    // System.out.println("RASAeroCD: " + RASAeroCD);
 
                     // TODO: ADD CL AND CN
                     // Only override CD if RASAero returned a valid value (not NaN)
@@ -422,6 +473,30 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
                         Rocket rocketHold = this.simCond.getRocket();
                         rocketHold.setCDOverridden(false);
                         rocketHold.setSubcomponentsOverriddenCD(false);
+                    }
+
+                    // Bending analysis capture (if enabled and we have valid RASAero data)
+                    if (simCond.isBendingAnalysisEnabled() && !Double.isNaN(RASAeroCD)) {
+                        if (shouldCaptureBendingData(currentStatus)) { // TODO: likely remove this entirely
+                            info.openrocket.core.document.BendingAnalysis.getBendingFlightData(
+                                currentStatus,
+                                curMachNum,
+                                curAOA,
+                                this.simCond,
+                                this.simCond.getAerodynamicCalculator()
+                            );
+                        }
+                    }
+
+                    // Dynamic stability capture (if enabled and we have valid RASAero data)
+                    if (simCond.isDynamicStabilityEnabled() && !Double.isNaN(RASAeroCD)) {
+                        info.openrocket.core.document.DynamicStability.getDynamicStabilityData(
+                            currentStatus,
+                            curMachNum,
+                            curAOA,
+                            this.simCond,
+                            this.simCond.getAerodynamicCalculator()
+                        );
                     }
                 }
 
@@ -926,5 +1001,24 @@ public class BasicEventSimulationEngineDispersionAnalysis implements SimulationE
 			log.warn("Exception computing coast time: ", e);
 			return null;
 		}
+	}
+
+	/**
+	 * Determines whether to capture bending data at the current simulation point.
+	 * Captures every 0.1 seconds or at high acceleration events (>50 m/s²).
+	 */
+	private boolean shouldCaptureBendingData(SimulationStatus status) {
+		double time = status.getSimulationTime();
+		double accel = status.getFlightDataBranch().getLast(FlightDataType.TYPE_ACCELERATION_TOTAL);
+
+		// Capture every 0.1 seconds or at high-G events
+		boolean shouldCaptureByTime = (time - lastBendingCaptureTime) >= 0.1;
+		boolean shouldCaptureByAccel = (accel > 50.0);
+
+		if (shouldCaptureByTime || shouldCaptureByAccel) {
+			lastBendingCaptureTime = time;
+			return true;
+		}
+		return false;
 	}
 }

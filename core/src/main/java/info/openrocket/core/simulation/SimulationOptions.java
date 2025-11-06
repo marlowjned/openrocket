@@ -91,6 +91,8 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 	private int numDispersionIterations = 5;
 	private boolean enableRASAeroOverride = false;
 	private boolean enableCustomWind = false;
+	private boolean enableBendingAnalysis = false;
+	private boolean enableDynamicStability = false;
 
 	public SimulationOptions() {
 		averageWindModel = new PinkNoiseWindModel(randomSeed);
@@ -338,6 +340,30 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 		fireChangeEvent();
 	}
 
+	public boolean isBendingAnalysisEnabled() {
+		return enableBendingAnalysis;
+	}
+
+	public void setEnableBendingAnalysis(boolean enable) {
+		if (this.enableBendingAnalysis == enable) {
+			return;
+		}
+		this.enableBendingAnalysis = enable;
+		fireChangeEvent();
+	}
+
+	public boolean isDynamicStabilityEnabled() {
+		return enableDynamicStability;
+	}
+
+	public void setEnableDynamicStability(boolean enable) {
+		if (this.enableDynamicStability == enable) {
+			return;
+		}
+		this.enableDynamicStability = enable;
+		fireChangeEvent();
+	}
+
 	public boolean isCustomWindEnabled() {
 		return enableCustomWind;
 	}
@@ -478,6 +504,8 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 			copy.numDispersionIterations = this.numDispersionIterations;
 			copy.enableRASAeroOverride = this.enableRASAeroOverride;
 			copy.enableCustomWind = this.enableCustomWind;
+			copy.enableBendingAnalysis = this.enableBendingAnalysis;
+			copy.enableDynamicStability = this.enableDynamicStability;
 
 			// Create a new list for listeners
 			copy.listeners = new ArrayList<>();
@@ -600,7 +628,9 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 				this.enableDispersionAnalysis == o.enableDispersionAnalysis &&
 				this.numDispersionIterations == o.numDispersionIterations &&
 				this.enableRASAeroOverride == o.enableRASAeroOverride &&
-				this.enableCustomWind == o.enableCustomWind;
+				this.enableCustomWind == o.enableCustomWind &&
+				this.enableBendingAnalysis == o.enableBendingAnalysis &&
+				this.enableDynamicStability == o.enableDynamicStability;
 	}
 
 	/**
@@ -666,6 +696,8 @@ public class SimulationOptions implements ChangeSource, Cloneable, SimulationOpt
 		conditions.setNumDispersionIterations(getNumDispersionIterations());
 		conditions.setEnableRASAeroOverride(isRASAeroOverrideEnabled());
 		conditions.setEnableCustomWind(isCustomWindEnabled());
+		conditions.setEnableBendingAnalysis(isBendingAnalysisEnabled());
+		conditions.setEnableDynamicStability(isDynamicStabilityEnabled());
 
 		return conditions;
 	}
